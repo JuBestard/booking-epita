@@ -12,6 +12,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -28,17 +30,44 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
             .authorizeHttpRequests(auth -> auth
-                // Step 3: add authorization
+                .requestMatchers("/dashboard").hasRole("admin")
                 .anyRequest().permitAll()
             )
-            // Step 3: Add login form
-            .csrf((csrf) -> csrf
-                .ignoringRequestMatchers("/h2-console/*")
+            .formLogin(withDefaults())
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/")
+                .permitAll()
+            )
+
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/h2-console/**")
             )
             .headers(headers -> headers.frameOptions().disable())
             .build();
     }
 
     // Step 3: add InMemoryUserDetailsManager
+    @Bean
+    public UserDetailsService users(PasswordEncoder encoder) {
+        // Define users with roles and encoded passwords
+        UserDetails admin = User.builder()
+            .username("admin")
+            .password(encoder.encode("admin"))
+            .roles("admin")
+            .build();
 
+        UserDetails user = User.builder()
+            .username("user")
+            .password(encoder.encode("user"))
+            .roles("user")
+            .build();
+
+        return new InMemoryUserDetailsManager(admin, user);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }
