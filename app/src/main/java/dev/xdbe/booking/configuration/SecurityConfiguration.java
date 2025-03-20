@@ -49,25 +49,21 @@ public class SecurityConfiguration {
 
     // Step 3: add InMemoryUserDetailsManager
     @Bean
-    public UserDetailsService users(PasswordEncoder encoder) {
+    public UserDetailsService users() {
         // Define users with roles and encoded passwords
         UserDetails admin = User.builder()
             .username("admin")
-            .password(encoder.encode("admin"))
+            .password("{bcrypt}$2a$10$pJu9LLaUpZ26zT30b.3evOMAKPRCyFG0ZTIYo15fJxgjdX/.AZteC")
             .roles("admin")
             .build();
 
         UserDetails user = User.builder()
             .username("user")
-            .password(encoder.encode("user"))
+            .password("{bcrypt}$2a$10$pJu9LLaUpZ26zT30b.3evOMAKPRCyFG0ZTIYo15fJxgjdX/.AZteC")
             .roles("user")
             .build();
 
         return new InMemoryUserDetailsManager(admin, user);
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }
