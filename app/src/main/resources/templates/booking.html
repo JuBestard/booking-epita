@@ -39,6 +39,7 @@
                         <input class="form-input" type="input" id="creditCardNumber" name="creditCardNumber" minlength="16" maxlength="16" required>
                     </div>
                     <!-- Step 2: CSRF -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="button-container">
                         <button class="form-button" type="submit">Book</button>
                     </div>
