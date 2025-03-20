@@ -23,8 +23,13 @@ public class CreditCardConverter implements AttributeConverter<String, String> {
     @Override
     public String convertToEntityAttribute(String dbData) {
         // Step 5: Mask credit card number
-        // Insert your code here to mask credit card number        
-        return dbData;
+        // Insert your code here to mask credit card number
+        String first = dbData.substring(0, 4);
+        String last = dbData.substring(12);
+
+        String stars = "********";
+
+        return first + stars + last;
    }
 
     
