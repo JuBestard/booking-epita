@@ -42,14 +42,14 @@ jobs:
         continue-on-error: true
 
       - name: Compare results with OSV Reporter
-        uses: google/osv-scanner-action/osv-reporter-action@main
+        uses: google/osv-scanner-action/osv-reporter-action@2.0.2
         with:
           scan-args: |-
             --output=osv-diff.sarif
             --new=osv-current.json
             --old=osv-base.json
             --gh-annotations=true
-            --fail-on-vuln  
+            --fail-on-vuln=true
 
       - name: Upload differential SARIF to Security Dashboard
         uses: github/codeql-action/upload-sarif@v3
@@ -62,3 +62,24 @@ jobs:
           name: osv-diff-report
           path: osv-diff.sarif
           retention-days: 7
+
+  semgrep:
+      name: Semgrep run
+      runs-on: ubuntu-latest
+
+      container:
+        image: returntocorp/semgrep
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Run Semgrep with Java ruleset
+          run: |
+            semgrep scan --config=p/java --sarif --output=semgrep.sarif
+  
+        - name: Upload Semgrep SARIF to GitHub Security Dashboard
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: semgrep.sarif
+
