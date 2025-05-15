@@ -1,0 +1,64 @@
+name: PR OSV Diff Scan
+
+permissions:
+  contents: read
+  security-events: write
+
+on:
+  pull_request:
+
+jobs:
+  osv-diff-scan:
+    name: Compare OSV Scan in PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Run OSV Scanner on PR
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with:
+          scan-args: |-
+            --output=osv-current.json
+            --format=json
+            ./app
+        continue-on-error: true
+
+      - name: Checkout base branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+  
+      - name: Run OSV Scanner on base
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with:
+          scan-args: |-
+            --output=osv-base.json
+            --format=json
+            ./app
+        continue-on-error: true
+
+      - name: Compare results with OSV Reporter
+        uses: google/osv-scanner-action/osv-reporter-action@main
+        with:
+          scan-args: |-
+            --output=osv-diff.sarif
+            --new=osv-current.json
+            --old=../base-code/osv-base.json
+            --gh-annotations=false
+            --fail-on-vuln=false
+
+      - name: Upload differential SARIF to Security Dashboard
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: osv-diff.sarif
+
+      - name: Save OSV diff report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-diff-report
+          path: osv-diff.sarif
+          retention-days: 7
