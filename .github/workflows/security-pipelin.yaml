@@ -13,12 +13,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v1
+        uses: google/osv-scanner-action@v2.0.2
         with:
           output-format: 'sarif'
           output-file: 'osv-results.sarif'
 
       - name: Upload SARIF to GitHub Security Dashboard
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: osv-results.sarif
