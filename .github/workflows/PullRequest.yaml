@@ -48,8 +48,8 @@ jobs:
             --output=osv-diff.sarif
             --new=osv-current.json
             --old=osv-base.json
-            --gh-annotations=false
-            --fail-on-vuln=false
+            --gh-annotations=true
+            --fail-on-vuln=true  
 
       - name: Upload differential SARIF to Security Dashboard
         uses: github/codeql-action/upload-sarif@v3
