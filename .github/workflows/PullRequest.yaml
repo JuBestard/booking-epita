@@ -49,7 +49,7 @@ jobs:
             --new=osv-current.json
             --old=osv-base.json
             --gh-annotations=true
-            --fail-on-vuln=true  
+            --fail-on-vuln  
 
       - name: Upload differential SARIF to Security Dashboard
         uses: github/codeql-action/upload-sarif@v3
