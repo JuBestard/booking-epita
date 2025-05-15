@@ -47,7 +47,7 @@ jobs:
           scan-args: |-
             --output=osv-diff.sarif
             --new=osv-current.json
-            --old=../base-code/osv-base.json
+            --old=osv-base.json
             --gh-annotations=false
             --fail-on-vuln=false
 
