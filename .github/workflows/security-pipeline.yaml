@@ -1,13 +1,17 @@
-name: Daily security scan
+name: Daily + PR security scan
 
 permissions:
-  security-events: write
   contents: read
+  security-events: write
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Every day at 02:00 UTC
+    - cron: '0 2 * * *'  # Daily at 02:00 UTC
   workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   osv-scan:
@@ -18,35 +22,73 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: "Run scanner"
-        uses: google/osv-scanner-action/osv-scanner-action@8dded7155905cd666190a12dc9997000e58d163d # v2.0.
+      - name: Run OSV Scanner (current code)
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
         with:
           scan-args: |-
-            --output=scan.sarif
+            --output=osv-head.sarif
             --format=sarif
             ./app
         continue-on-error: true
-      - name: "Upload to code-scanning"
-        uses: github/codeql-action/upload-sarif@28deaeda66b76a05916b6923827895f2b14ab387
+
+      - name: Checkout base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+          cp -r ./ ./base-code
+
+      - name: Run OSV Scanner (base code)
+        if: github.event_name == 'pull_request'
+        working-directory: ./base
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
         with:
-          sarif_file: scan.sarif
+          scan-args: |-
+            --output=osv-base.sarif
+            --format=sarif
+            ./app
+        continue-on-error: true
+
+      - name: Compare OSV results (reporter)
+        if: github.event_name == 'pull_request'
+        uses: google/osv-scanner-action/osv-reporter-action@main
+        with:
+          scan-args: |-
+            --output=osv-diff.sarif
+            --new=osv-head.sarif
+            --old=./base-code/osv-base.sarif
+            --gh-annotations=false
+            --fail-on-vuln=false
+
+      - name: Upload SARIF to GitHub Security Dashboard
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: |
+            ${{ github.event_name == 'pull_request' && 'osv-diff.sarif' || 'osv-head.sarif' }}
+
+      - name: Upload OSV diff report as artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-diff-report
+          path: osv-diff.sarif
+          retention-days: 7
 
   semgrep:
-      name: Semgrep run
-      runs-on: ubuntu-latest
+    name: Run Semgrep and Upload SARIF
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
 
-      container:
-        image: returntocorp/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-  
-        - name: Run Semgrep with Java ruleset
-          run: |
-            semgrep scan --config=p/java --sarif --output=semgrep.sarif
-  
-        - name: Upload Semgrep SARIF to GitHub Security Dashboard
-          uses: github/codeql-action/upload-sarif@v2
-          with:
-            sarif_file: semgrep.sarif
+      - name: Run Semgrep with Java ruleset
+        run: |
+          semgrep scan --config=p/java --sarif --output=semgrep.sarif
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
