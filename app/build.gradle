@@ -10,7 +10,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(23)
 	}
 }
 
@@ -29,6 +29,7 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-core'
 	implementation 'com.h2database:h2:2.3.232'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
+    implementation 'xerces:xercesImpl:2.10.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'org.hamcrest:hamcrest:3.0'
