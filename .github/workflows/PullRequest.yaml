@@ -16,7 +16,7 @@ jobs:
       - name: Checkout PR code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Run OSV Scanner on PR
         uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
@@ -31,7 +31,7 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}
           git checkout origin/${{ github.base_ref }}
-  
+
       - name: Run OSV Scanner on base
         uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
         with:
@@ -42,14 +42,14 @@ jobs:
         continue-on-error: true
 
       - name: Compare results with OSV Reporter
-        uses: google/osv-scanner-action/osv-reporter-action@main
+        uses: google/osv-scanner-action/osv-reporter-action@v2.0.2
         with:
           scan-args: |-
             --output=osv-diff.sarif
             --new=osv-current.json
-            --old=../base-code/osv-base.json
-            --gh-annotations=false
-            --fail-on-vuln=false
+            --old=osv-base.json
+            --gh-annotations=true
+            --fail-on-vuln=true
 
       - name: Upload differential SARIF to Security Dashboard
         uses: github/codeql-action/upload-sarif@v3
@@ -61,4 +61,37 @@ jobs:
         with:
           name: osv-diff-report
           path: osv-diff.sarif
+          retention-days: 7
+
+  semgrep:
+    name: Semgrep Diff Scan
+    runs-on: ubuntu-latest
+
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for baseline comparison
+
+      - name: Run Semgrep differential scan with Java ruleset
+        run: |
+          semgrep scan \
+            --config=p/java \
+            --baseline-commit origin/${{ github.base_ref }} \
+            --sarif \
+            --output=semgrep-diff.sarif
+
+      - name: Upload Semgrep SARIF to GitHub Security Dashboard
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-diff.sarif
+
+      - name: Save Semgrep diff report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-diff-report
+          path: semgrep-diff.sarif
           retention-days: 7
