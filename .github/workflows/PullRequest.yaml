@@ -80,7 +80,7 @@ jobs:
         run: |
           semgrep scan \
             --config=p/java \
-            --baseline diff.patch \
+            --baseline-commit \
             --sarif \
             --output=semgrep-diff.sarif
 
