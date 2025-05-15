@@ -80,7 +80,7 @@ jobs:
         run: |
           semgrep scan \
             --config=p/java \
-            --baseline-commit \
+            --baseline-commit origin/${{ github.base_ref }} \
             --sarif \
             --output=semgrep-diff.sarif
 
